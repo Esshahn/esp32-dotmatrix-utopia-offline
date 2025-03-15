@@ -20,13 +20,12 @@
 constexpr uint8_t DISPLAY_WIDTH = 64;
 constexpr uint8_t DISPLAY_HEIGHT = 64;
 constexpr uint8_t BRIGHTNESS = 100;  // 0-255
-constexpr unsigned long REFRESH_INTERVAL = 1000UL * 30;  // 30 seconds in milliseconds
+constexpr unsigned long REFRESH_INTERVAL = 1000UL * 60 * 60;  // 60 minutes in milliseconds
 
 // Time configuration
 constexpr uint8_t WAKE_HOUR = 7;    // 7 AM
 constexpr uint8_t SLEEP_HOUR = 22;  // 10 PM
 constexpr uint8_t SETUP_BUTTON = 0; // Boot button on most ESP32 boards
-constexpr uint64_t SLEEP_DURATION = (9 * 60 * 60); // 9 hours in seconds (from 22:00 to 7:00)
 
 // Forward declarations of classes
 class DisplayManager;
@@ -355,7 +354,6 @@ public:
         display->begin();
         display->setBrightness8(BRIGHTNESS);
         display->clearScreen();
-        display->setTextSize(1);
     }
 
     void clearScreen() { display->clearScreen(); }
@@ -363,7 +361,7 @@ public:
     void setCursor(int16_t x, int16_t y) { display->setCursor(x, y); }
     void print(const char* text) { display->print(text); }
     void printf(const char* format, ...) {
-        char buf[64];
+        char buf[32];  // Fixed size, sufficient for our needs
         va_list args;
         va_start(args, format);
         vsnprintf(buf, sizeof(buf), format, args);
@@ -501,7 +499,7 @@ void setupTime() {
     display->clearScreen();
     display->setCursor(3, 3);
     display->print("Time Set!");
-    display->setCursor(3, 10);
+    display->setCursor(3, 12);
     display->printf("%d", currentHour);
     Serial.printf("Time set to %d\n", currentHour);
     delay(2000);
@@ -552,18 +550,15 @@ void setup() {
 void loop() {
     static unsigned long lastMinute = 0;
     
-    // Update current hour every minute
     if (millis() - lastMinute >= 60000) {  // Every minute
         lastMinute = millis();
         currentHour = (currentHour + 1) % 24;
         
-        // Check if it's time to sleep
         if (currentHour == SLEEP_HOUR) {
             goToSleep();
         }
     }
     
-    // Normal display update logic
     if (display->shouldUpdate()) {
         String message = content->getRandomMessage();
         display->updateDisplay(message);
