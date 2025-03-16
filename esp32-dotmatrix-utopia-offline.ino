@@ -20,7 +20,7 @@
 constexpr uint8_t DISPLAY_WIDTH = 64;
 constexpr uint8_t DISPLAY_HEIGHT = 64;
 constexpr uint8_t BRIGHTNESS = 100;  // 0-255
-constexpr unsigned long REFRESH_INTERVAL = 1000UL * 60 * 60;  // 60 minutes in milliseconds
+constexpr unsigned long REFRESH_INTERVAL = 1000UL * 60 * 1; //60 * 4;  //60 minutes * 4 = 4 hours
 
 // Time configuration
 constexpr uint8_t WAKE_HOUR = 7;    // 7 AM
@@ -383,7 +383,12 @@ public:
 
     void updateDisplay(const String& message) {
         clearScreen();
-        setTextColor(2, 6, 2);
+        
+        // Generate random colors (values between 1-7 for good visibility)
+        uint8_t r = random(1, 8);
+        uint8_t g = random(1, 8);
+        uint8_t b = random(1, 8);
+        setTextColor(r, g, b);
         
         const int16_t maxWidth = DISPLAY_WIDTH - 4;  // Reduce padding to 2px on each side
         const int16_t lineHeight = 9;  // Height of each text line
@@ -549,12 +554,18 @@ void setup() {
 
 void loop() {
     static unsigned long lastMinute = 0;
+    unsigned long currentMillis = millis();
     
-    if (millis() - lastMinute >= 60000) {  // Every minute
-        lastMinute = millis();
+    // Handle millis() overflow
+    if ((currentMillis - lastMinute) >= 60000) {  // Every minute
+        lastMinute = currentMillis;
         currentHour = (currentHour + 1) % 24;
         
+        Serial.printf("Time update - Current hour: %d, Sleep hour: %d, Wake hour: %d\n", 
+                     currentHour, SLEEP_HOUR, WAKE_HOUR);
+        
         if (currentHour == SLEEP_HOUR) {
+            Serial.println("Sleep hour reached, preparing for sleep...");
             goToSleep();
         }
     }
